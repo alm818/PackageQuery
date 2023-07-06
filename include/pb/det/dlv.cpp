@@ -32,7 +32,7 @@ DynamicLowVariance::~DynamicLowVariance(){
   delete pg;
 }
 
-DynamicLowVariance::DynamicLowVariance(int core, double group_ratio, double main_memory, long long tps): core(core), original_group_ratio(group_ratio), main_memory(main_memory), tps(tps){
+DynamicLowVariance::DynamicLowVariance(int core, double group_ratio, double main_memory, long long tps, bool is_max_var): core(core), original_group_ratio(group_ratio), main_memory(main_memory), tps(tps), is_max_var(is_max_var){
   INIT_CLOCK(pro);
   init();
 }
@@ -743,15 +743,15 @@ long long DynamicLowVariance::doPartition(string table_name, string suffix, cons
           }
           int local_pindex = -1;
           VectorXd total_vars = mv.getM2();
-          double max_total_var = -1;
+          double max_metric = -1;
           for (int j = 0; j < m; j ++){
-            double total_var = total_vars(j);
-            if (max_total_var < total_var){
-              max_total_var = total_var;
+            double metric = is_max_var ? mv.getM2()(j) : mv.getVar()(j);
+            if (max_metric < metric){
+              max_metric = metric;
               local_pindex = j;
             }
           }
-          max_heap[i] = {max_total_var, local_pindex, i};
+          max_heap[i] = {max_metric, local_pindex, i};
         }
         #pragma omp barrier
         #pragma omp master
@@ -763,23 +763,23 @@ long long DynamicLowVariance::doPartition(string table_name, string suffix, cons
         while (group_count < soft_group_lim){
           int mi = -1;
           long long gi = -1;
-          double max_total_var = 0;
+          double max_metric = 0;
           #pragma omp critical (c5)
           {
-            while (heap_length > 0 && max_total_var == 0){
-              tie(max_total_var, mi, gi) = max_heap[0];
+            while (heap_length > 0 && max_metric == 0){
+              tie(max_metric, mi, gi) = max_heap[0];
               pop_heap(max_heap.begin(), max_heap.begin() + heap_length);
               heap_length --;
             }
           }
-          if (max_total_var == 0) break;
+          if (max_metric == 0) break;
           auto& g = *groups[gi];
           sort(g.begin(), g.end(), IndexComp(A, mi, m));
           int delim_sz = soft_partition_lim;
           vector<long long> delims (delim_sz);
           int delim_count = 0;
           ScalarMeanVar smv = ScalarMeanVar();
-          double reduced_var = max_total_var / g.size() * var_ratio;
+          double reduced_var = max_metric / g.size() * var_ratio;
           for (int i = 0; i < (int) g.size(); i ++){
             smv.add(A[at(mi, g[i])]);
             if (smv.getVar() > reduced_var){
@@ -855,11 +855,11 @@ long long DynamicLowVariance::doPartition(string table_name, string suffix, cons
               mv.add(A+at(0, (*gptr)[j]));
             }
             int m_index = -1;
-            VectorXd total_vars = mv.getM2();
             double m_var = 0;
             for (int j = 0; j < m; j ++){
-              if (m_var < total_vars(j)){
-                m_var = total_vars(j);
+              double metric = is_max_var ? mv.getM2()(j) : mv.getVar()(j);
+              if (m_var < metric){
+                m_var = metric;
                 m_index = j;
               }
             }
@@ -883,11 +883,11 @@ long long DynamicLowVariance::doPartition(string table_name, string suffix, cons
               mv.add(A+at(0, g[j]));
             }
             int m_index = -1;
-            VectorXd total_vars = mv.getM2();
             double m_var = 0;
             for (int j = 0; j < m; j ++){
-              if (m_var < total_vars(j)){
-                m_var = total_vars(j);
+              double metric = is_max_var ? mv.getM2()(j) : mv.getVar()(j);
+              if (m_var < metric){
+                m_var = metric;
                 m_index = j;
               }
             }

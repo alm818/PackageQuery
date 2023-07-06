@@ -172,7 +172,7 @@ void Z3(){
       LsrProb lsr_prob = LsrProb(det_sql, exp.getDlvPartitionName(), exp.seed);
       // if (i <= 1) continue;
       for (auto H : exp.H8){ 
-        if (H >= 15) continue;
+        // if (H >= 15) continue;
         exp.H = H;
         lsr_prob.generateBounds(exp.E, exp.a, exp.H);
         cout << "To lsr" << endl;
@@ -236,6 +236,48 @@ void Z4(){
           exp.write(exp.datasets[exp.q] + "_LPLSR_ilp", H, rlsr.ilp_score);
           exp.write(exp.datasets[exp.q] + "_LPLSR_ground", H, ground);
           exp.write(exp.datasets[exp.q] + "_LPLSR_igap", H, intGap(rlsr.ilp_score, ground));
+        }
+      }
+    }
+  }
+}
+
+/******************************************/
+void Z5(){
+  string exp_name = "Z5";
+  DetExp exp = DetExp(exp_name);
+  exp.o = 7;
+  int R = 5;
+  for (int q = 1; q >= 0; q --){
+    exp.q = q;
+    exp.E = exp.Es[exp.q];
+    for (int i = 1; i <= R; i ++){
+      for (int z = 0; z <= 1; z ++){
+        cout << "SEED " << i << endl;
+        exp.seed = i;
+        if (z == 0) exp.is_max_var = true;
+        else exp.is_max_var = false;
+        DetSql det_sql = exp.generate();
+        DetProb det_prob = DetProb(det_sql, -1, exp.seed);
+        exp.dlvPartition();
+        cout << "Done partitioning!" << endl;
+        LsrProb lsr_prob = LsrProb(det_sql, exp.getDlvPartitionName(), exp.seed);
+        // if (i <= 1) continue;
+        for (auto H : exp.H8){
+          if (H == 15) continue;
+          exp.H = H;
+          lsr_prob.generateBounds(exp.E, exp.a, exp.H);
+          LayeredSketchRefine lsr = LayeredSketchRefine(exp.C, lsr_prob, exp.S, true);
+          det_prob.copyBounds(lsr_prob.bl, lsr_prob.bu, lsr_prob.cl, lsr_prob.cu);
+          Dual dual = Dual(exp.C, det_prob);
+          double ground = dual.score;
+          string name = "_LSR" + to_string(z);
+          if (lsr.status == Found){
+            exp.write(exp.datasets[exp.q] + name + "_P", H, 1);
+            exp.write(exp.datasets[exp.q] + name + "_ilp", H, lsr.ilp_score);
+            exp.write(exp.datasets[exp.q] + name + "_ground", H, ground);
+            exp.write(exp.datasets[exp.q] + name + "_igap", H, intGap(lsr.ilp_score, ground));
+          }
         }
       }
     }
@@ -548,10 +590,10 @@ void L1(){
 void L2(){
   string exp_name = "L2";
   DetExp exp = DetExp(exp_name);
-  exp.o = 8;
+  exp.o = 7;
   int R = 3;
   for (int q = 0; q < 2; q ++){
-    if (q == 1) continue;
+    // if (q == 1) continue;
     exp.q = q;
     string label = "LSR_" + exp.datasets[q];
     for (int i = 0; i < R; i ++){
@@ -762,11 +804,12 @@ int main() {
   // Z2();
   // Z3();
   // Z4();
+  Z5();
   // A1();
   // A2();
   // A3();
   // A4();
-  A5();
+  // A5();
   // P1();
   // P2();
   // L1();

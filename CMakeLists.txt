@@ -61,9 +61,9 @@ link_directories( ${PYTHON_LIBRARIES})
 # set(MAIN_NAME "main_sketchrefine")
 
 # TEST
-set(MAIN_NAME "test_final")
+# set(MAIN_NAME "test_final")
 # set(MAIN_NAME "test_det_bound")
-# set(MAIN_NAME "test_dlv")
+set(MAIN_NAME "test_dlv")
 
 message("PROJECT NAME: " ${PROJECT_NAME})
 message("SOURCE FOLDER: " ${CMAKE_SOURCE_DIR})

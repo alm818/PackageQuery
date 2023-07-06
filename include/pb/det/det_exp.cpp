@@ -100,6 +100,7 @@ void DetExp::reset(){
   q = 0;
   tps = kTps;
   tau_ratio = kTauRatio;
+  is_max_var = true;
   seed = 1;
 }
 
@@ -130,7 +131,7 @@ DetSql DetExp::generate(bool is_lazy){
 }
 
 double DetExp::dlvPartition(bool is_lazy){
-  DynamicLowVariance dlv = DynamicLowVariance(C, g, M, tps);
+  DynamicLowVariance dlv = DynamicLowVariance(C, g, M, tps, is_max_var);
   string table_name = getTableName();
   if (is_lazy){
     if (!dlv.existPartition(table_name, getDlvPartitionName())){
@@ -164,7 +165,7 @@ double DetExp::kdPartition(bool is_lazy){
 }
 
 string DetExp::getDlvPartitionName(){
-  return fmt::format("dlv_C{}_g{}_M{}_tps{}", C, formatFloat(g), formatFloat(M, 1), tps);
+  return fmt::format("dlv_C{}_g{}_M{}_tps{}_{}", C, formatFloat(g), formatFloat(M, 1), tps, (int)is_max_var);
 }
 
 string DetExp::getKdPartitionName(){

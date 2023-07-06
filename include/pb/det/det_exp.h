@@ -44,6 +44,8 @@ public:
   int q;
   // Seed
   int seed;
+  // is_max_var for dlv;
+  bool is_max_var;
 
   // Ranges
   static vector<double> H8, H4, E2, M6, F5, g2;
