@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Mai"
+  given-names: "Anh"
+- family-names: "Wang"
+  given-names: "Pengyu"
+- family-names: "Abouzied"
+  given-names: "Azza"
+- family-names: "Brucato"
+  given-names: "Matteo"
+- family-names: "Haas"
+  given-names: "Peter"
+- family-names: "Meliou"
+  given-names: "Alexandra"
+title: "Scaling Package Queries to a Billion Tuples via Hierarchical
+Partitioning and Customized Optimization"
+version: 1.0.0
+doi: arXiv.2307.02860
+date-released: 2023-07-11
+url: "https://github.com/alm818/PackageQuery"
