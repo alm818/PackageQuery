@@ -6,9 +6,8 @@ cmake/*
 !resource/sql_script
 !resource/backup
 !plots/*ipynb
-!resource/*.ipynb
 !resource/*.py
-!resource/*.sh
 .vscode/
 .ipynb_checkpoints/
 config.txt
+package_query.code-workspace
