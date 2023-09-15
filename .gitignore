@@ -5,6 +5,7 @@ cmake/*
 !build/conanfile.txt
 !resource/sql_script
 !resource/backup
+!plots/*txt
 !plots/*ipynb
 !resource/*.py
 .vscode/

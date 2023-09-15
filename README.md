@@ -83,3 +83,23 @@ This code needs Gurobiv9.5.2 or higher.
      to the correct Gurobi's version in your system
 
 ## Result Reproduction
+
+Build files
+
+```bash
+  cd build
+  cmake -DCMAKE_BUILD_TYPE=Release .. 
+```
+
+Compile files and run
+
+```bash
+  cd build
+  cmake --build . --config Release
+  bin/main
+```
+
+This will generate 3 files in *plots* folder: A3.csv, A4_tpch.csv and A4_ssds.csv
+
+You can draw the related graph in the paper by running Experiment.ipynb in the *plots* folder
+
