@@ -1,4 +1,4 @@
-#include "lsr.h"
+#include "ilp_lsr.h"
 
 #include "pb/core/dual_reducer.h"
 #include "pb/core/checker.h"
@@ -8,7 +8,7 @@ const int kSleepPeriod = 25; // In ms
 const double kMinGapOpt = 1e-4;
 const double kMinGap = 1e-1;
 
-void LayeredSketchRefine::init(){
+void ILPLayeredSketchRefine::init(){
   pg = new PgManager();
   _conn = PQconnectdb(pg->conninfo.c_str());
   assert(PQstatus(_conn) == CONNECTION_OK);
@@ -18,7 +18,7 @@ void LayeredSketchRefine::init(){
   exe_gb = exe_dual = 0;
 }
 
-DLVPartition* LayeredSketchRefine::getDLVPartition(LsrProb* prob){
+DLVPartition* ILPLayeredSketchRefine::getDLVPartition(LsrProb* prob){
   _sql = fmt::format("SELECT cols, group_ratio, tps, layer_count FROM {} WHERE table_name='{}' AND partition_name='{}';", kPartitionTable, prob->det_sql.table_name, prob->partition_name);
   _res = PQexec(_conn, _sql.c_str());
   if (PQntuples(_res)){
@@ -32,13 +32,13 @@ DLVPartition* LayeredSketchRefine::getDLVPartition(LsrProb* prob){
   return NULL; 
 }
 
-LayeredSketchRefine::~LayeredSketchRefine(){
+ILPLayeredSketchRefine::~ILPLayeredSketchRefine(){
   PQfinish(_conn);
   if (partition) delete partition;
   delete pg;
 }
 
-void LayeredSketchRefine::formulateDetProb(int core, LsrProb &prob, DetProb &det_prob, string current_gtable, const vector<long long> &ids){
+void ILPLayeredSketchRefine::formulateDetProb(int core, LsrProb &prob, DetProb &det_prob, string current_gtable, const vector<long long> &ids){
   int m = prob.det_sql.att_cols.size() + 1;
   int n = (int) ids.size();
   det_prob.resize(m, n);
@@ -99,7 +99,7 @@ void LayeredSketchRefine::formulateDetProb(int core, LsrProb &prob, DetProb &det
   det_prob.truncate();
 }
 
-LayeredSketchRefine::LayeredSketchRefine(int core, LsrProb &prob, long long lp_size, bool is_safe): lp_size(lp_size){
+ILPLayeredSketchRefine::ILPLayeredSketchRefine(int core, LsrProb &prob, long long lp_size, bool is_safe): lp_size(lp_size){
   init();
   std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
   partition = getDLVPartition(&prob);
@@ -112,6 +112,8 @@ LayeredSketchRefine::LayeredSketchRefine(int core, LsrProb &prob, long long lp_s
       DualReducer dr = DualReducer(core, det_prob, is_safe, kMinGapOpt, kTimeLimit);
       exe_gb += dr.exe_gb;
       exe_dual += dr.exe_lp;
+      exe_lp = dr.exe_lp;
+      exe_ilp = dr.exe_ilp;
       status = dr.status;
       if (status == Found){
         ilp_score = dr.ilp_score;
@@ -293,10 +295,10 @@ LayeredSketchRefine::LayeredSketchRefine(int core, LsrProb &prob, long long lp_s
 
     int n = (int) det_prob.c.size();
     // Phase-2a: Sketch
-    Dual dual = Dual(core, det_prob);
-    exe_dual += dual.exe_solve;
-    if (dual.status != Found){
-      status = dual.status;
+    DualReducer dr = DualReducer(core, det_prob);
+    exe_dual += dr.exe_ilp;
+    if (dr.status != Found){
+      status = dr.status;
       return;
     }
     priority_queue<pair<double, long long>> pq;
@@ -312,7 +314,7 @@ LayeredSketchRefine::LayeredSketchRefine(int core, LsrProb &prob, long long lp_s
       #pragma omp for
       for (int i = 0; i < n; i ++){
         // Condition for sketch
-        if (isGreater(dual.sol(i), 0)){
+        if (isGreater(dr.ilp_sol(i), 0)){
           long long group_id = det_prob.ids[i];
           if (total_size <= lp_size){
             long long size = loc_partition->getGroupComp(loc_ids, layer, group_id, limit_size_per_group);

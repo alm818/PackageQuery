@@ -16,7 +16,7 @@ private:
   PgManager *pg;
   bool verbose;
   vector<string> lines;
-  string backup_path;
+  string backup_path, out_file;
 public:
   // Expected number of tuples in solution package
   double E;
@@ -48,8 +48,8 @@ public:
   bool is_max_var;
 
   // Ranges
-  static vector<double> H8, H4, E2, M6, F5, g2;
-  static vector<int> C7, o6, o4;
+  static vector<double> H8, H7, H4, E2, M6, F5, g3;
+  static vector<int> Q4, C7, o6, o4;
   static vector<long long> S3;
 
   // Queries

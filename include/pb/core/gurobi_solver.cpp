@@ -39,6 +39,8 @@ GurobiSolver::GurobiSolver(const DetProb &prob, bool with_objective): Checker(pr
   }
   assert(!GRBupdatemodel(model));
   exe_init = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start).count() / 1000000.0;
+  exe_lp = 0;
+  exe_ilp = 0;
 }
 
 void GurobiSolver::writeModel(string file_name){

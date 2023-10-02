@@ -6,7 +6,6 @@
 
 #include "pb/util/udebug.h"
 
-static const int kIlpSize = 5000;
 static const double kEpsilon = 1e-8;
 static const double kSafeMipGap = DBL_MAX;
 static const double kFastTimeLimit = 5.0;
@@ -76,7 +75,7 @@ DetProb* DualReducer::filtering(VectorXi &reduced_index, int core, const DetProb
   return reduced_prob;
 }
 
-DualReducer::DualReducer(int core, const DetProb &prob, bool is_safe, double min_gap, double time_limit){
+DualReducer::DualReducer(int core, const DetProb &prob, bool is_safe, double min_gap, double time_limit, int ilp_size){
   // cout << "WTF " << time_limit << " " << kTimeLimit << "\n";
   failure_count = 0;
   std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
@@ -85,7 +84,7 @@ DualReducer::DualReducer(int core, const DetProb &prob, bool is_safe, double min
   ilp_sol.resize(n); lp_sol.resize(n);
   ilp_score = lp_score = exe_ilp = exe_lp = exe_gb = 0;
   status = NotFound;
-  if (n < kIlpSize){
+  if (n < ilp_size){
     // Gurobi
     GurobiSolver gs = GurobiSolver(prob);
     gs.solveLp();
@@ -118,7 +117,7 @@ DualReducer::DualReducer(int core, const DetProb &prob, bool is_safe, double min
       // cout << "KO2\n";
       double E = lp_sol.sum();
       DetProb newProb = prob;
-      newProb.u.fill(E/kIlpSize);
+      newProb.u.fill(E/ilp_size);
       Dual scaled_dual = Dual(core, newProb);
       vector<pair<double, int>> scores;
       // cout << "KO3\n";
@@ -144,7 +143,7 @@ DualReducer::DualReducer(int core, const DetProb &prob, bool is_safe, double min
         }
       }
       sort(scores.begin(), scores.end());
-      for (int i = 0; i < min(kIlpSize, (int) scores.size()); i ++){
+      for (int i = 0; i < min(ilp_size, (int) scores.size()); i ++){
         stay[scores[i].second] = Stay;
         stay_count ++;
       }
@@ -166,7 +165,7 @@ DualReducer::DualReducer(int core, const DetProb &prob, bool is_safe, double min
         // cout << "KO5\n";
         delete reduced_prob;
       } else if (is_safe){
-        int current_size = kIlpSize;
+        int current_size = ilp_size;
         vector<int> inds (n);
         iota(inds.begin(), inds.end(), 0);
         random_shuffle(inds.begin(), inds.end());

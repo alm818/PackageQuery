@@ -11,6 +11,7 @@
 #include "pb/tmp/random_lsr.h"
 #include "pb/tmp/test_dual_reducer.h"
 #include "pb/tmp/lp_lsr.h"
+#include "pb/tmp/ilp_lsr.h"
 
 #include "pb/core/checker.h"
 #include "pb/core/dual.h"

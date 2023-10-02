@@ -1,14 +1,15 @@
-#include "lsr.h"
+#include "gdr_lsr.h"
 
 #include "pb/core/dual_reducer.h"
 #include "pb/core/checker.h"
+#include "pb/core/gurobi_solver.h"
 
 const int kSleepPeriod = 25; // In ms
 
 const double kMinGapOpt = 1e-4;
 const double kMinGap = 1e-1;
 
-void LayeredSketchRefine::init(){
+void GDRLayeredSketchRefine::init(){
   pg = new PgManager();
   _conn = PQconnectdb(pg->conninfo.c_str());
   assert(PQstatus(_conn) == CONNECTION_OK);
@@ -18,7 +19,7 @@ void LayeredSketchRefine::init(){
   exe_gb = exe_dual = 0;
 }
 
-DLVPartition* LayeredSketchRefine::getDLVPartition(LsrProb* prob){
+DLVPartition* GDRLayeredSketchRefine::getDLVPartition(LsrProb* prob){
   _sql = fmt::format("SELECT cols, group_ratio, tps, layer_count FROM {} WHERE table_name='{}' AND partition_name='{}';", kPartitionTable, prob->det_sql.table_name, prob->partition_name);
   _res = PQexec(_conn, _sql.c_str());
   if (PQntuples(_res)){
@@ -32,13 +33,13 @@ DLVPartition* LayeredSketchRefine::getDLVPartition(LsrProb* prob){
   return NULL; 
 }
 
-LayeredSketchRefine::~LayeredSketchRefine(){
+GDRLayeredSketchRefine::~GDRLayeredSketchRefine(){
   PQfinish(_conn);
   if (partition) delete partition;
   delete pg;
 }
 
-void LayeredSketchRefine::formulateDetProb(int core, LsrProb &prob, DetProb &det_prob, string current_gtable, const vector<long long> &ids){
+void GDRLayeredSketchRefine::formulateDetProb(int core, LsrProb &prob, DetProb &det_prob, string current_gtable, const vector<long long> &ids){
   int m = prob.det_sql.att_cols.size() + 1;
   int n = (int) ids.size();
   det_prob.resize(m, n);
@@ -99,7 +100,8 @@ void LayeredSketchRefine::formulateDetProb(int core, LsrProb &prob, DetProb &det
   det_prob.truncate();
 }
 
-LayeredSketchRefine::LayeredSketchRefine(int core, LsrProb &prob, long long lp_size, bool is_safe): lp_size(lp_size){
+GDRLayeredSketchRefine::GDRLayeredSketchRefine(int core, LsrProb &prob, long long lp_size, bool is_safe): lp_size(lp_size){
+  UNUSED(is_safe);
   init();
   std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
   partition = getDLVPartition(&prob);
@@ -109,10 +111,13 @@ LayeredSketchRefine::LayeredSketchRefine(int core, LsrProb &prob, long long lp_s
       DetProb det_prob = DetProb(prob.det_sql, -1, kGlobalSeed);
       det_prob.copyBounds(prob.bl, prob.bu, prob.cl, prob.cu);
 
-      DualReducer dr = DualReducer(core, det_prob, is_safe, kMinGapOpt, kTimeLimit);
-      exe_gb += dr.exe_gb;
+      // DualReducer dr = DualReducer(core, det_prob, is_safe, kMinGapOpt, kTimeLimit);
+      GurobiSolver dr = GurobiSolver(det_prob);
+      dr.solveIlp(kMinGapOpt, kTimeLimit);
+      dr.solveLp();
+      exe_gb += dr.exe_ilp;
       exe_dual += dr.exe_lp;
-      status = dr.status;
+      status = dr.ilp_status;
       if (status == Found){
         ilp_score = dr.ilp_score;
         lp_score = dr.lp_score;
@@ -293,10 +298,12 @@ LayeredSketchRefine::LayeredSketchRefine(int core, LsrProb &prob, long long lp_s
 
     int n = (int) det_prob.c.size();
     // Phase-2a: Sketch
-    Dual dual = Dual(core, det_prob);
-    exe_dual += dual.exe_solve;
-    if (dual.status != Found){
-      status = dual.status;
+    GurobiSolver dual = GurobiSolver(det_prob);
+    dual.solveLp();
+    // Dual dual = Dual(core, det_prob);
+    exe_dual += dual.exe_lp;
+    if (dual.lp_status != Found){
+      status = dual.lp_status;
       return;
     }
     priority_queue<pair<double, long long>> pq;
@@ -312,7 +319,7 @@ LayeredSketchRefine::LayeredSketchRefine(int core, LsrProb &prob, long long lp_s
       #pragma omp for
       for (int i = 0; i < n; i ++){
         // Condition for sketch
-        if (isGreater(dual.sol(i), 0)){
+        if (isGreater(dual.lp_sol(i), 0)){
           long long group_id = det_prob.ids[i];
           if (total_size <= lp_size){
             long long size = loc_partition->getGroupComp(loc_ids, layer, group_id, limit_size_per_group);
@@ -429,11 +436,14 @@ LayeredSketchRefine::LayeredSketchRefine(int core, LsrProb &prob, long long lp_s
     }
   }
   // Phase-3: Final solution
-  DualReducer dr = DualReducer(core, det_prob, is_safe, kMinGapOpt, kTimeLimit);
-  exe_gb += dr.exe_gb;
+  // DualReducer dr = DualReducer(core, det_prob, is_safe, kMinGapOpt, kTimeLimit);
+  GurobiSolver dr = GurobiSolver(det_prob);
+  dr.solveIlp(kMinGapOpt, kTimeLimit);
+  dr.solveLp();
+  exe_gb += dr.exe_ilp;
   exe_dual += dr.exe_lp;
-  if (dr.status != Found){
-    status = dr.status;
+  if (dr.ilp_status != Found){
+    status = dr.ilp_status;
     return;
   }
   // Checker ch = Checker(det_prob);

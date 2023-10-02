@@ -11,12 +11,13 @@ using namespace pb;
 const double kTauRatio = 0.001;
 
 vector<double> DetExp::H8 = {1, 3, 5, 7, 9, 11, 13, 15};
+vector<double> DetExp::H7 = {1, 3, 5, 7, 9, 11, 13};
 vector<double> DetExp::H4 = {1, 3, 5, 7};
 vector<double> DetExp::E2 = {20, 1000};
 vector<double> DetExp::M6 = {8, 16, 32, 64, 128, 300};
 vector<double> DetExp::F5 = {0.1, 0.3, 0.5, 0.7, 0.9};
-vector<double> DetExp::g2 = {0.001, 0.01};
-
+vector<double> DetExp::g3 = {0.001, 0.01, 0.1};
+vector<int> DetExp::Q4 = {50, 500, 5000, 50000};
 vector<int> DetExp::C7 = {1, 2, 4, 8, 16, 32, 80};
 vector<int> DetExp::o6 = {4, 5, 6, 7, 8, 9};
 vector<int> DetExp::o4 = {6, 7, 8, 9};
@@ -25,46 +26,62 @@ vector<long long> DetExp::S3 = {100000, 1000000, 10000000};
 
 vector<string> DetExp::datasets = {
   "tpch", 
+  "ssds",
+  "tpch",
   "ssds"
 };
 
 vector<string> DetExp::obj_cols = {
   "price",
-  "tmass_prox"
+  "tmass_prox",
+  "tax",
+  "k"
 };
 
 vector<bool> DetExp::is_maximizes = {
   true, 
-  false
+  false,
+  false,
+  true
 };
 
 vector<vector<string>> DetExp::arr_att_cols = {
   {"quantity", "discount", "tax"},
-  {"j", "h", "k"}
+  {"j", "h", "k"},
+  {"quantity", "price"},
+  {"j", "h"}
 };
 
 vector<vector<int>> DetExp::arr_att_senses = {
   {LowerBounded, UpperBounded, Bounded},
-  {LowerBounded, UpperBounded, Bounded}
+  {LowerBounded, UpperBounded, Bounded},
+  {UpperBounded, Bounded},
+  {Bounded, LowerBounded}
 };
 
 vector<bool> DetExp::has_count_constraints = {
+  true,
+  true,
   true,
   true
 };
 
 vector<long long> DetExp::us = {
   1,
+  1,
+  1,
   1
 };
 
 vector<string> DetExp::filtered_cols = {
   "price",
-  "tmass_prox"
+  "tmass_prox",
+  "tax",
+  "k"
 };
 
 vector<double> DetExp::Es = {
-  30.0, 30.0
+  30.0, 30.0, 100, 100
 };
 
 DetExp::~DetExp(){
@@ -73,9 +90,11 @@ DetExp::~DetExp(){
   for (string s : lines) backup << s;
   backup.close();
   delete pg;
+  if (verbose) cout << "Finish experiment " << this->out_file << endl;
 }
 
 DetExp::DetExp(string out_file, bool verbose): verbose(verbose){
+  this->out_file = out_file;
   if (verbose) cout << "Start experiment " << out_file << endl;
   string path = fmt::format("{}{}{}{}{}.csv", kProjectHome, separator(), kOutFolder, separator(), out_file);
   backup_path = fmt::format("{}{}{}{}{}{}{}.csv", kProjectHome, separator(), kOutFolder, separator(), kBackupFolder, separator(), out_file);
