@@ -1,12 +1,12 @@
-#include "partialpackage.h"
+#include "tmp_partialpackage.h"
 #include "pb/core/gurobi_solver.h"
 #include "pb/core/checker.h"
 
 #define VERBOSE 0
 
-PartialPackage::~PartialPackage() {}
+TmpPartialPackage::~TmpPartialPackage() {}
 // #TODO: does the order of column is addressed here? i.e. if A has different column order than bl & bu, could we still solve it?
-void PartialPackage::init(PGconn *conn, DetProb &sketch_det_prob, map<long long, long long> &sketch_sol, unordered_set<long long> &sketch_gids)
+void TmpPartialPackage::init(PGconn *conn, DetProb &sketch_det_prob, map<long long, long long> &sketch_sol, unordered_set<long long> &sketch_gids)
 {
     this->_conn = conn;
     this->sketch_det_prob = sketch_det_prob;
@@ -16,18 +16,16 @@ void PartialPackage::init(PGconn *conn, DetProb &sketch_det_prob, map<long long,
     this->sketch_gids = sketch_gids;
     this->temp_A = sketch_det_prob.A;
     this->initial_ids = sketch_det_prob.ids;
-    plus_exe = 0;
-    minus_exe = 0;
 }
 
-// PartialPackage::PartialPackage(DetProb &det_prob, map<long long, long long> &sketch_sol, vector<int> &group_indices, vector<string> &g_cols, string filter_conds): sketch_sol(sketch_sol), group_indices(group_indices), g_cols(g_cols), filter_conds(filter_conds){
+// TmpPartialPackage::TmpPartialPackage(DetProb &det_prob, map<long long, long long> &sketch_sol, vector<int> &group_indices, vector<string> &g_cols, string filter_conds): sketch_sol(sketch_sol), group_indices(group_indices), g_cols(g_cols), filter_conds(filter_conds){
 //     num_total_group = det_prob.ids.size();
 //     sketch_det_prob = det_prob;
 //     refine_det_prob = det_prob;
 //     sketch_gids = det_prob.ids;
 // }
 
-PartialPackage::PartialPackage(LsrProb &lsr_prob) : lsr_prob(lsr_prob)
+TmpPartialPackage::TmpPartialPackage(LsrProb &lsr_prob) : lsr_prob(lsr_prob)
 {
     g_cols = vector<string>(lsr_prob.det_sql.att_cols.size());
     for (size_t i = 0; i < lsr_prob.det_sql.att_cols.size(); i++)
@@ -37,7 +35,7 @@ PartialPackage::PartialPackage(LsrProb &lsr_prob) : lsr_prob(lsr_prob)
     filter_conds = getFilterConds(lsr_prob.det_sql.filter_cols, lsr_prob.det_sql.filter_intervals, kPrecision);
 }
 
-bool PartialPackage::refine(map<long long, long long> &sol, int core)
+bool TmpPartialPackage::refine(map<long long, long long> &sol, int core)
 {
     if (sketch_gids.empty())
         return true;
@@ -71,8 +69,6 @@ bool PartialPackage::refine(map<long long, long long> &sol, int core)
     int num_group_refined_phase1 = 0;
     int num_iter = 1;
 
-    int effective_core = ceilDiv(core, 4);
-
     // Phase 1 start here
 
     while (sketch_gids.size() > 0)
@@ -81,20 +77,15 @@ bool PartialPackage::refine(map<long long, long long> &sol, int core)
         // As long as there are unrefined groups, start refining from the first one
         long long refine_group_start_idx = 0, refine_group_end_idx;
         int num_group_refined_iter = 0;
-
-        vector<double> timings;
     
         while (refine_group_start_idx < E)
         {
-            auto t0 = std::chrono::high_resolution_clock::now();
             // cout << "OKc " << refine_group_start_idx << " " << E << endl; 
             long long refine_gid = sketch_det_prob.ids[refine_group_start_idx];
             // If this group is already refined, skip
             if (sketch_gids.find(refine_gid) == sketch_gids.end())
             {
                 refine_group_start_idx ++;
-                auto t1 = std::chrono::high_resolution_clock::now();
-                timings.push_back(std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count() / 1000000.0);
                 continue;
             }
             long long num_repr_tuple = sketch_sol.at(refine_gid);
@@ -182,8 +173,6 @@ bool PartialPackage::refine(map<long long, long long> &sol, int core)
                 #endif
 
                 refine_group_start_idx = refine_group_end_idx;
-                auto t1 = std::chrono::high_resolution_clock::now();
-                timings.push_back(std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count() / 1000000.0);
                 continue;
             }
             else
@@ -213,16 +202,7 @@ bool PartialPackage::refine(map<long long, long long> &sol, int core)
             // cout << "OKb\n"; 
             num_group_refined_phase1 += 1;
             refine_group_start_idx = refine_group_end_idx;
-            auto t1 = std::chrono::high_resolution_clock::now();
-            timings.push_back(std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count() / 1000000.0);
         }
-
-        for (auto v : timings) minus_exe += v;
-        vector<double> core_times (effective_core, 0);
-        for (int i = 0; i < (int) timings.size(); i ++){
-            core_times[i%effective_core] += timings[i];
-        }
-        plus_exe += *max_element(core_times.begin(), core_times.end());
 
         if (num_group_refined_iter == 0)
         {
@@ -240,7 +220,6 @@ bool PartialPackage::refine(map<long long, long long> &sol, int core)
         sketch_det_prob.A = temp_A;
         num_iter++;
     }
-
 
     // Phase 1 end here
 
@@ -268,11 +247,8 @@ bool PartialPackage::refine(map<long long, long long> &sol, int core)
 
     // Phase 2: Going though each group again for replacement
     long long refine_group_start_idx = 0, refine_group_end_idx;
-    vector<double> timings;
-    bool is_success = false;
     while (refine_group_start_idx < E)
     {
-        auto t0 = std::chrono::high_resolution_clock::now();
         // cout << "RGSI " << refine_group_start_idx << " E " << E << "\n"; 
         // long long refine_gid = sketch_det_prob.ids[refine_group_start_idx];
         long long re_refine_gid = initial_ids[refine_group_start_idx];
@@ -332,8 +308,6 @@ bool PartialPackage::refine(map<long long, long long> &sol, int core)
             // fmt::print("Phase2: Re-refine failed {} at group {}\n", feasMessage(feasStatus), re_refine_gid);
             
             refine_group_start_idx = refine_group_end_idx;
-            auto t1 = std::chrono::high_resolution_clock::now();
-            timings.push_back(std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count() / 1000000.0);
             continue;
         }
 
@@ -370,23 +344,15 @@ bool PartialPackage::refine(map<long long, long long> &sol, int core)
         fmt::print("[Suceed] Phase 2 suceeded, re-refined group {} with size {}, feasMessage: {}\n", re_refine_gid, num_repr_tuple,feasMessage(feasStatus));
         #endif
         //fmt::print("Refining for gid: {}, size {}\n", refine_gid, num_repr_tuple);
-        auto t1 = std::chrono::high_resolution_clock::now();
-        timings.push_back(std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count() / 1000000.0);
-        is_success = true;
-        break;
-    }
 
-    for (auto v : timings) minus_exe += v;
-    vector<double> core_times (effective_core, 0);
-    for (int i = 0; i < (int) timings.size(); i ++){
-        core_times[i%effective_core] += timings[i];
+        return true;
+
     }
-    plus_exe += core_times[(timings.size() - 1)%effective_core];
 
     // Exited the loop means that no re-refining can be done on any group
     #if VERBOSE
     fmt::print("[Failed] Phase 2 failed, no re-refining can be done.\n");
     #endif
     
-    return is_success;
+    return false;
 }

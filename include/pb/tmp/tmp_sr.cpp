@@ -1,8 +1,8 @@
-#include "sr.h"
+#include "tmp_sr.h"
 
 #include "pb/core/gurobi_solver.h"
 #include "pb/det/det_prob.h"
-#include "partialpackage.h"
+#include "tmp_partialpackage.h"
 
 #include "pb/util/uconfig.h"
 #include "pb/util/upostgres.h"
@@ -10,13 +10,13 @@
 
 #define VERBOSE 0
 
-SketchRefine::~SketchRefine()
+TmpSketchRefine::~TmpSketchRefine()
 {
     PQfinish(_conn);
     delete pg;
 }
 
-void SketchRefine::init()
+void TmpSketchRefine::init()
 {
     pg = new PgManager();
     _conn = PQconnectdb(pg->conninfo.c_str());
@@ -24,12 +24,12 @@ void SketchRefine::init()
     _res = NULL;
 }
 
-SketchRefine::SketchRefine(LsrProb &lsr_prob, int core): prob(lsr_prob), core(core)
+TmpSketchRefine::TmpSketchRefine(LsrProb &lsr_prob, int core): prob(lsr_prob), core(core)
 {
     init();
 }
 
-bool SketchRefine::sketchAndRefine(map<long long, long long> &sol) {
+bool TmpSketchRefine::sketchAndRefine(map<long long, long long> &sol) {
 
     auto t0 = std::chrono::high_resolution_clock::now();
     group_table_name = fmt::format("[1G]_{}_{}", prob.det_sql.table_name, prob.partition_name);
@@ -204,7 +204,7 @@ bool SketchRefine::sketchAndRefine(map<long long, long long> &sol) {
     fmt::print("Finished sketching solutions: {:.5Lf}ms\n", exec_sketch);
     #endif
     // cout << "OK2\n";
-    PartialPackage pp = PartialPackage(prob);
+    TmpPartialPackage pp = TmpPartialPackage(prob);
     pp.init(_conn, det_prob_trimmed, sketch_sol, sketch_gids);
     bool status = pp.refine(sol, core);
     auto t2 = std::chrono::high_resolution_clock::now();
@@ -214,16 +214,16 @@ bool SketchRefine::sketchAndRefine(map<long long, long long> &sol) {
     fmt::print("Finished refining groups: {:.5Lf}ms\n\n", exec_refine);
     #endif
 
-    exec_sr = exec_sketch + exec_refine + pp.plus_exe - pp.minus_exe;
+    exec_sr = std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t0).count() / 1000000.0;
     return status;
 }
 
-bool SketchRefine::checkTupleFiltered(VectorXd &tuple, VectorXd &bl, VectorXd &bu)
+bool TmpSketchRefine::checkTupleFiltered(VectorXd &tuple, VectorXd &bl, VectorXd &bu)
 {   
     return (tuple.array() > bl.array()).all() && (tuple.array() < bu.array()).all();
 }
 
-// void SketchRefine::Sketch(LsrProb &prob)
+// void TmpSketchRefine::Sketch(LsrProb &prob)
 // {
 //     string col_names = join(prob.det_sql.att_cols, ",");
 //     string sql = fmt::format("SELECT {},{},{} FROM \"{}\";",
@@ -231,7 +231,7 @@ bool SketchRefine::checkTupleFiltered(VectorXd &tuple, VectorXd &bl, VectorXd &b
 //     formulateDetProb(prob, sql);
 // }
 
-// void SketchRefine::Refine(LsrProb &prob, long refine_gid)
+// void TmpSketchRefine::Refine(LsrProb &prob, long refine_gid)
 // {
 //     string col_names = join(prob.det_sql.att_cols, ",");
 //     string group_select_template = "SELECT {},{},{} FROM \"{}\" d\n"
@@ -244,7 +244,7 @@ bool SketchRefine::checkTupleFiltered(VectorXd &tuple, VectorXd &bl, VectorXd &b
 //     formulateDetProb(prob, sql);
 // }
 
-// void SketchRefine::formulateDetProb(LsrProb &prob, string sql)
+// void TmpSketchRefine::formulateDetProb(LsrProb &prob, string sql)
 // {
 //     // Execute the filtering query to get base relations
 //     _res = PQexec(_conn, sql.c_str());

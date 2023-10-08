@@ -145,17 +145,18 @@ void DynamicLowVariance::partition(string table_name, string partition_name, con
   std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
   dropPartition(table_name, partition_name);
   long long size = pg->getSize(table_name);
-  double target_group_ratio = tps / (double) size;
-  double group_ratio = min(original_group_ratio, target_group_ratio);
+  // double target_group_ratio = tps / (double) size;
+  // double group_ratio = min(original_group_ratio, target_group_ratio);
+  double group_ratio = original_group_ratio / (1.0 + kPctTolerance);
   // cout << size << " " << group_ratio << endl;
   size = doPartition(table_name, partition_name, cols, group_ratio);
   if (!size) return;
   string g_name = nextGName(table_name + "_" + partition_name);
   int layer_count = 0;
   while (size){
-    // cout << "OKg" << " " << size << endl;
-    target_group_ratio = tps / (double) size;
-    group_ratio = min(original_group_ratio, target_group_ratio);
+    // target_group_ratio = tps / (double) size;
+    // group_ratio = min(original_group_ratio, target_group_ratio);
+    // cout << size << " " << group_ratio << endl;
     size = doPartition(g_name, "", cols, group_ratio);
     g_name = nextGName(g_name);
     layer_count ++;

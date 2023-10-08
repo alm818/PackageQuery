@@ -12,20 +12,20 @@
 
 using namespace pb;
 
-class SketchRefine {
+class TmpSketchRefine {
     private:
         PgManager *pg;
         PGconn *_conn;
         PGresult *_res;
         string _sql, group_table_name, partition_table_name;
+        int core;
         bool checkTupleFiltered(VectorXd &tuple, VectorXd &bl, VectorXd &bu);
     public:
         DetProb det_prob;
         LsrProb prob;
-        int core;
         double exec_sr, exec_refine, exec_sketch;
-        ~SketchRefine();
-        SketchRefine(LsrProb &lsr_prob, int core=kPCore);
+        ~TmpSketchRefine();
+        TmpSketchRefine(LsrProb &lsr_prob, int core=kPCore);
         void init();
         bool sketchAndRefine(map<long long, long long> &sol);
         void formulateDetProb(LsrProb &prob, string sql);

@@ -64,6 +64,7 @@ DLVPartition::DLVPartition(const LsrProb *prob, vector<string> cols, double grou
     assert(PQresultStatus(_res) == PGRES_COMMAND_OK);
     PQclear(_res);
     _sql = fmt::format("SELECT id FROM \"{}\" WHERE {};", current_initial_gtable, and_itv_conds);
+    // cout << _sql << endl;
     _res = PQprepare(_conn, fmt::format("group_{}", current_initial_gtable).c_str(), _sql.c_str(), cols.size(), NULL);
     assert(PQresultStatus(_res) == PGRES_COMMAND_OK);
     PQclear(_res);

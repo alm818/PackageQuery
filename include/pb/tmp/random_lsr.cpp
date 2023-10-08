@@ -318,9 +318,20 @@ RandomLayeredSketchRefine::RandomLayeredSketchRefine(int core, LsrProb &prob, lo
     vector<long long> random_ids (lp_size);
     random_device rd;
     default_random_engine gen (rd());
-    uniform_int_distribution<long long> dist (1, group_count);
-    for (int i = 0; i < lp_size; i ++) random_ids[i] = dist(gen);
-
+    if (group_count < 2*lp_size){
+      vector<long long> indices (group_count);
+      iota(indices.begin(), indices.end(), 1);
+      shuffle(indices.begin(), indices.end(), gen);
+      for (int i = 0; i < lp_size; i ++){
+        random_ids[i] = indices[i];
+      }
+    } else{
+      uniform_int_distribution<long long> dist (1, group_count);
+      for (int i = 0; i < lp_size; i ++){
+        random_ids[i] = dist(gen);
+      }
+    }
+    // cout << "Finish 2a" << endl;
     #pragma omp parallel num_threads(core)
     {
       DLVPartition *loc_partition = new DLVPartition(&prob, partition->cols, partition->group_ratio, partition->tps, partition->layer_count);
@@ -344,7 +355,7 @@ RandomLayeredSketchRefine::RandomLayeredSketchRefine(int core, LsrProb &prob, lo
       }
       // Phase-2b: Shade
       while (true){
-        if (total_size > lp_size) break;
+        if (total_size >= lp_size) break;
         unordered_set<long long> group_ids;
         int chunk = ceilDiv((int) lp_size, core);
         int idx = omp_get_thread_num();
@@ -378,6 +389,11 @@ RandomLayeredSketchRefine::RandomLayeredSketchRefine(int core, LsrProb &prob, lo
       //   }
       //   cout << endl;
       // }
+      // #pragma omp barrier
+      // #pragma omp master
+      // {
+      //   cout << "Finish 2b" << endl;
+      // }
 
       // Phase-2c: Refine
       long long start_index = 0;
@@ -400,12 +416,18 @@ RandomLayeredSketchRefine::RandomLayeredSketchRefine(int core, LsrProb &prob, lo
     string next_gtable;
     if (layer > 1) next_gtable = partition->getGName(layer-1);
     else next_gtable = prob.det_sql.table_name;
+    // #pragma omp barrier
+    // #pragma omp master
+    // {
+      // cout << "Finish 2c" << endl;
+    // }
     formulateDetProb(core, prob, det_prob, next_gtable, ids);
     // Debug
     // for (auto v : ids) cout << v << " ";
     // cout << endl;
     // cout << ids.size() << endl;
   }
+  // cout << "Start fn" << endl;
   if (partition->is_filtering){
     for (int layer = 1; layer <= partition->layer_count; layer ++){
       string gname = partition->getGName(layer);

@@ -15,7 +15,7 @@
 
 using namespace pb;
 
-class PartialPackage {
+class TmpPartialPackage {
     public:
         PGconn *_conn;
         PGresult *_res;
@@ -31,11 +31,10 @@ class PartialPackage {
         vector<string> g_cols; // att_cols aliased as g
         unordered_set<long long> sketch_gids; // used for indexing the RMatrix
         string filter_conds;
-        double plus_exe, minus_exe;
 
     public:
-        ~PartialPackage();
-        PartialPackage(LsrProb &lsr_rob);
+        ~TmpPartialPackage();
+        TmpPartialPackage(LsrProb &lsr_rob);
         void init(PGconn *conn, DetProb &sketch_det_prob, map<long long, long long> &sketch_sol, unordered_set<long long> &sketch_gids);
         bool refine(map<long long, long long> &sol, int core);
 };

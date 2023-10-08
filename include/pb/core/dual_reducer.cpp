@@ -82,6 +82,7 @@ DualReducer::DualReducer(int core, const DetProb &prob, bool is_safe, double min
   int n = (int) prob.c.size();
   int m = (int) prob.bl.size();
   ilp_sol.resize(n); lp_sol.resize(n);
+  ilp_sol.fill(0); lp_sol.fill(0);
   ilp_score = lp_score = exe_ilp = exe_lp = exe_gb = 0;
   status = NotFound;
   if (n < ilp_size){

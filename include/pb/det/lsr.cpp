@@ -55,6 +55,7 @@ void LayeredSketchRefine::formulateDetProb(int core, LsrProb &prob, DetProb &det
   int chunk = ceilDiv(n, core);
   int layer = getLayerIndex(current_gtable);
   string col_names = join(prob.det_sql.att_cols, ",");
+  // cout << "Finish 3a with size " << ids.size() << endl;
   #pragma omp parallel num_threads(core)
   {
     CREATE_CLOCK(local_pro);
@@ -77,7 +78,9 @@ void LayeredSketchRefine::formulateDetProb(int core, LsrProb &prob, DetProb &det
           kId, prob.det_sql.obj_col, col_names, current_gtable, kId, string_ids);
       }
       START_CLOCK(local_pro, 0);
+      // cout << "OK with " << seg << endl;
       res = PQexec(conn, sql.c_str());
+      // cout << "End with " << seg << endl;
       END_CLOCK(local_pro, 0);
       for (int i = 0; i < PQntuples(res); i++){
         int index = i + start_id;
@@ -94,6 +97,7 @@ void LayeredSketchRefine::formulateDetProb(int core, LsrProb &prob, DetProb &det
     PQclear(res);
     PQfinish(conn);
   }
+  // cout << "Finish 3b" << endl;
   if (!prob.det_sql.is_maximize) det_prob.c = -det_prob.c;
   // Remove -inf <= Ax <= inf if exists
   det_prob.truncate();
@@ -288,6 +292,7 @@ LayeredSketchRefine::LayeredSketchRefine(int core, LsrProb &prob, long long lp_s
   formulateDetProb(core, prob, det_prob, current_gtable, last_layer_ids);
   // Phase-2: Iteratively go to next layer
   for (int layer = partition->layer_count; layer >= 1; layer --){
+    // cout << "Start layer " << layer << "/" << partition->layer_count << "\n";
     // // Make sure that we augment less tuples for the original layer
     // if (layer == 1) lp_size = kOptLpSize;
 
@@ -299,6 +304,7 @@ LayeredSketchRefine::LayeredSketchRefine(int core, LsrProb &prob, long long lp_s
       status = dual.status;
       return;
     }
+    // cout << "Start sketch with " << core << " cores" << endl;
     priority_queue<pair<double, long long>> pq;
     unordered_set<long long> group_ids_set;
     vector<long long> ids;
@@ -326,6 +332,11 @@ LayeredSketchRefine::LayeredSketchRefine(int core, LsrProb &prob, long long lp_s
           }
         }
       }
+      // #pragma omp barrier
+      // #pragma omp master
+      // {
+      //   cout << "Finish 2a" << endl;
+      // }
       // Phase-2b: Shade
       bool is_active = false;
       while (true){
@@ -385,6 +396,12 @@ LayeredSketchRefine::LayeredSketchRefine(int core, LsrProb &prob, long long lp_s
         }
       }
 
+      // #pragma omp barrier
+      // #pragma omp master
+      // {
+      //   cout << "Finish 2b" << endl;
+      // }
+
       // Debug
       // #pragma omp critical
       // {
@@ -411,12 +428,20 @@ LayeredSketchRefine::LayeredSketchRefine(int core, LsrProb &prob, long long lp_s
       if (loc_ids.size()) memcpy(&(ids[start_index]), &(loc_ids[0]), loc_ids.size()*sizeof(long long));
       ADD_CLOCK(loc_partition->pro, core);
       delete loc_partition;
+
+      // #pragma omp barrier
+      // #pragma omp master
+      // {
+      //   cout << "Finish 2c" << endl;
+      // }
     }
 
     string next_gtable;
     if (layer > 1) next_gtable = partition->getGName(layer-1);
     else next_gtable = prob.det_sql.table_name;
+    // cout << "Start formulate\n";
     formulateDetProb(core, prob, det_prob, next_gtable, ids);
+    // cout << "Finish formulate\n";
     // Debug
     // for (auto v : ids) cout << v << " ";
     // cout << endl;
@@ -428,6 +453,8 @@ LayeredSketchRefine::LayeredSketchRefine(int core, LsrProb &prob, long long lp_s
       pg->dropTable(gname);
     }
   }
+
+  // cout << "Start final" << endl;
   // Phase-3: Final solution
   DualReducer dr = DualReducer(core, det_prob, is_safe, kMinGapOpt, kTimeLimit);
   exe_gb += dr.exe_gb;

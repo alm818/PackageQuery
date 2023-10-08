@@ -62,6 +62,8 @@ namespace pb{
   
   using std::to_string;
   using std::iota;
+  using std::max_element;
+  using std::min_element;
   using std::sort;
   using std::min;
   using std::max;

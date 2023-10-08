@@ -1,11 +1,12 @@
 #pragma once
 
+#include "pb/util/uconfig.h"
 #include "pb/util/udebug.h"
 #include "pb/util/upostgres.h"
 #include "libpq-fe.h"
 
-static const double kGroupRatio = 0.1;
-static const long long kTps = (long long) pow(10, 5.5);
+static const double kGroupRatio = 0.01;
+static const long long kTps = 100000;
 
 class DynamicLowVariance{
 private:

@@ -22,7 +22,7 @@ vector<int> DetExp::C7 = {1, 2, 4, 8, 16, 32, 80};
 vector<int> DetExp::o6 = {4, 5, 6, 7, 8, 9};
 vector<int> DetExp::o4 = {6, 7, 8, 9};
 
-vector<long long> DetExp::S3 = {100000, 1000000, 10000000};
+vector<long long> DetExp::S3 = {10000, 100000, 1000000};
 
 vector<string> DetExp::datasets = {
   "tpch", 
@@ -128,9 +128,10 @@ string DetExp::getTableName(){
 }
 
 vector<string> DetExp::getCols(){
-  vector<string> cols = arr_att_cols[q];
-  cols.insert(cols.begin(), obj_cols[q]);
-  return cols;
+  // vector<string> cols = arr_att_cols[q];
+  // cols.insert(cols.begin(), obj_cols[q]);
+  // return cols;
+  return pg->getNumericCols(datasets[q]);
 }
 
 DetSql DetExp::generate(bool is_lazy){
