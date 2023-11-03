@@ -70,8 +70,11 @@ public:
   string getTableName();
   vector<string> getCols();
   DetSql generate(bool is_lazy=true);
+  void dropGeneratedTable();
   double dlvPartition(bool is_lazy=true);
   double kdPartition(bool is_lazy=true);
+  void dropDlvPartition();
+  void dropKdPartition();
   string getKdPartitionName();
   string getDlvPartitionName();
   void write(string id, double x, double y);

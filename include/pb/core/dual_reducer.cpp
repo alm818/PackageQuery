@@ -122,27 +122,33 @@ DualReducer::DualReducer(int core, const DetProb &prob, bool is_safe, double min
       Dual scaled_dual = Dual(core, newProb);
       vector<pair<double, int>> scores;
       // cout << "KO3\n";
+      // cout << scaled_dual.sol.size() << " " << lp_sol.size() << " " << prob.l.size() << " " << prob.c.size() << " " << n << endl;
       #pragma omp parallel num_threads(core)
       {
         #pragma omp for
         for (int i = 0; i < n; i ++){
-          if (isGreater(lp_sol(i), prob.l(i))){
-            if (stay[i] != Stay){
-              stay[i] = Stay;
-              #pragma omp atomic
-              stay_count ++;
+          if (dual.status == Found){
+            if (isGreater(lp_sol(i), prob.l(i))){
+              if (stay[i] != Stay){
+                stay[i] = Stay;
+                #pragma omp atomic
+                stay_count ++;
+              }
             }
           }
-          if (isGreater(scaled_dual.sol(i), prob.l(i))){
-            if (stay[i] != Stay){
-              #pragma omp critical (c1)
-              {
-                scores.push_back({prob.c(i), i});
+          if (scaled_dual.status == Found){
+            if (isGreater(scaled_dual.sol(i), prob.l(i))){
+              if (stay[i] != Stay){
+                #pragma omp critical (c1)
+                {
+                  scores.push_back({prob.c(i), i});
+                }
               }
             }
           }
         }
       }
+      // cout << "KO3.5\n";
       sort(scores.begin(), scores.end());
       for (int i = 0; i < min(ilp_size, (int) scores.size()); i ++){
         stay[scores[i].second] = Stay;

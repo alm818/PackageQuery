@@ -622,8 +622,10 @@ Dual::Dual(int core, const DetProb &prob){
     GurobiSolver gs = GurobiSolver(prob);
     gs.solveLp();
     status = gs.lp_status;
-    sol = gs.lp_sol;
-    score = gs.lp_score;
+    if (status == Found){
+      sol = gs.lp_sol;
+      score = gs.lp_score;
+    }
   }
   // pro.print();
   exe_solve = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start).count() / 1000000.0;

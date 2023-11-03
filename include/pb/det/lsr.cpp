@@ -467,6 +467,7 @@ LayeredSketchRefine::LayeredSketchRefine(int core, LsrProb &prob, long long lp_s
   // cout << solMessage(dr.status) << " " << feasMessage(ch.checkIlpFeasibility(dr.ilp_sol)) << " " << feasMessage(ch.checkLpFeasibility(dr.lp_sol)) << endl;
   status = Found;
   ilp_score = lp_score = 0;
+  // cout << "F1\n";
   for (int i = 0; i < (int) det_prob.c.size(); i ++){
     if (isGreater(dr.ilp_sol(i), 0)){
       ilp_sol[det_prob.ids[i]] = (long long) dr.ilp_sol(i);
@@ -477,12 +478,14 @@ LayeredSketchRefine::LayeredSketchRefine(int core, LsrProb &prob, long long lp_s
       lp_score += lp_sol[det_prob.ids[i]]*det_prob.c(i);
     }
   }
+  // cout << "F2\n";
   LsrChecker ch = LsrChecker(prob);
   if (ch.checkLpFeasibility(lp_sol) != Feasibility || ch.checkIlpFeasibility(ilp_sol) != Feasibility){
     // cout << feasMessage(ch.checkLpFeasibility(lp_sol)) << endl;
     // cout << feasMessage(ch.checkIlpFeasibility(ilp_sol)) << endl;
     status = NotFound;
   }
+  // cout << "F3\n";
   exe_ilp = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start).count() / 1000000.0;
   exe_lp = exe_ilp - (dr.exe_ilp - dr.exe_lp);
 }

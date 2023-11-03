@@ -34,7 +34,7 @@ void G1(){
   exp.o = 7;
   int R = 5;
   int cnt = 0;
-  for (int q = 0; q < 2; q ++){
+  for (int q = 0; q <= 3; q ++){
     exp.q = q;
     // if (q == 0) continue;
     for (auto g : exp.g3){
@@ -45,7 +45,7 @@ void G1(){
         exp.S = S;
         for (int i = 1; i <= R; i ++){
           cnt ++;
-          string label = fmt::format("{}_df{}_alpha{}", exp.datasets[exp.q], formatFloat(g), exp.S);
+          string label = fmt::format("{}{}_df{}_alpha{}", exp.datasets[exp.q], q/2, formatFloat(g), exp.S);
           exp.seed = i;
           DetSql det_sql = exp.generate();
           double p_exe = exp.dlvPartition();
@@ -84,9 +84,9 @@ void G1(){
 void G2(){
   string exp_name = "G2";
   DetExp exp = DetExp(exp_name);
-  exp.o = 6;
-  int R = 5;
-  for (int q = 0; q < 2; q ++){
+  exp.o = 5;
+  int R = 10;
+  for (int q = 0; q <= 3; q ++){
     exp.q = q;
     for (int i = 1; i <= R; i ++){
       exp.seed = i;
@@ -97,7 +97,7 @@ void G2(){
         exp.E = exp.Es[exp.q];
         det_prob.generateBounds(exp.E, exp.a, exp.H);
         for (auto Q : exp.Q4){
-          string label = fmt::format("{}_Q{}", exp.datasets[exp.q], Q);
+          string label = fmt::format("{}{}_Q{}", exp.datasets[exp.q], q/2, Q);
           DualReducer dr = DualReducer(exp.C, det_prob, true, 1e-4, kTimeLimit, Q);
           if (dr.status == Found){
             Checker ch = Checker(det_prob);
@@ -124,9 +124,10 @@ void M1(){
   DetExp exp = DetExp(exp_name);
   exp.o = 7;
   int R = 5;
-  for (int q = 0; q < 2; q ++){
+  for (int q = 0; q <= 3; q ++){
     exp.q = q;
     exp.E = exp.Es[exp.q];
+    string label = fmt::format("{}{}", exp.datasets[exp.q], q/2);
     for (int i = 1; i <= R; i ++){
       exp.seed = i;
       DetSql det_sql = exp.generate();
@@ -139,22 +140,22 @@ void M1(){
         double ground = lsr.lp_score;
         ILPLayeredSketchRefine rlsr = ILPLayeredSketchRefine(exp.C, lsr_prob, exp.S, true);
         if (lsr.status == Found){
-          exp.write(exp.datasets[exp.q] + "_LPLSR_found", H, 1);
-          exp.write(exp.datasets[exp.q] + "_LPLSR_time", H, lsr.exe_ilp);
-          exp.write(exp.datasets[exp.q] + "_LPLSR_ilp", H, lsr.ilp_score);
-          exp.write(exp.datasets[exp.q] + "_LPLSR_lp", H, ground);
-          exp.write(exp.datasets[exp.q] + "_LPLSR_igap", H, intGap(lsr.ilp_score, ground));
+          exp.write(label + "_LPLSR_found", H, 1);
+          exp.write(label + "_LPLSR_time", H, lsr.exe_ilp);
+          exp.write(label + "_LPLSR_ilp", H, lsr.ilp_score);
+          exp.write(label + "_LPLSR_lp", H, ground);
+          exp.write(label + "_LPLSR_igap", H, intGap(lsr.ilp_score, ground));
         } else{
-          exp.write(exp.datasets[exp.q] + "_LPLSR_nofound", H, 1);
+          exp.write(label + "_LPLSR_nofound", H, 1);
         }
         if (rlsr.status == Found){
-          exp.write(exp.datasets[exp.q] + "_ILPLSR_found", H, 1);
-          exp.write(exp.datasets[exp.q] + "_ILPLSR_time", H, rlsr.exe_ilp);
-          exp.write(exp.datasets[exp.q] + "_ILPLSR_ilp", H, rlsr.ilp_score);
-          exp.write(exp.datasets[exp.q] + "_ILPLSR_lp", H, ground);
-          exp.write(exp.datasets[exp.q] + "_ILPLSR_igap", H, intGap(rlsr.ilp_score, ground));
+          exp.write(label + "_ILPLSR_found", H, 1);
+          exp.write(label + "_ILPLSR_time", H, rlsr.exe_ilp);
+          exp.write(label + "_ILPLSR_ilp", H, rlsr.ilp_score);
+          exp.write(label + "_ILPLSR_lp", H, ground);
+          exp.write(label + "_ILPLSR_igap", H, intGap(rlsr.ilp_score, ground));
         } else{
-          exp.write(exp.datasets[exp.q] + "_ILPLSR_nofound", H, 1);
+          exp.write(label + "_ILPLSR_nofound", H, 1);
         }
       }
     }
@@ -168,9 +169,10 @@ void M2(){
   DetExp exp = DetExp(exp_name);
   exp.o = 7;
   int R = 5;
-  for (int q = 0; q < 2; q ++){
+  for (int q = 0; q <= 3; q ++){
     exp.q = q;
     exp.E = exp.Es[exp.q];
+    string label = fmt::format("{}{}", exp.datasets[exp.q], q/2);
     for (int i = 1; i <= R; i ++){
       exp.seed = i;
       DetSql det_sql = exp.generate();
@@ -185,22 +187,22 @@ void M2(){
         // cout << "OK 2\n"; 
         RandomLayeredSketchRefine lplsr = RandomLayeredSketchRefine(exp.C, lsr_prob, exp.S, true);
         if (lsr.status == Found){
-          exp.write(exp.datasets[exp.q] + "_LSR_found", H, 1);
-          exp.write(exp.datasets[exp.q] + "_LSR_time", H, lsr.exe_ilp);
-          exp.write(exp.datasets[exp.q] + "_LSR_ilp", H, lsr.ilp_score);
-          exp.write(exp.datasets[exp.q] + "_LSR_lp", H, ground);
-          exp.write(exp.datasets[exp.q] + "_LSR_igap", H, intGap(lsr.ilp_score, ground));
+          exp.write(label + "_LSR_found", H, 1);
+          exp.write(label + "_LSR_time", H, lsr.exe_ilp);
+          exp.write(label + "_LSR_ilp", H, lsr.ilp_score);
+          exp.write(label + "_LSR_lp", H, ground);
+          exp.write(label + "_LSR_igap", H, intGap(lsr.ilp_score, ground));
         } else{
-          exp.write(exp.datasets[exp.q] + "_LSR_nofound", H, 1);
+          exp.write(label + "_LSR_nofound", H, 1);
         }
         if (lplsr.status == Found){
-          exp.write(exp.datasets[exp.q] + "_RLSR_found", H, 1);
-          exp.write(exp.datasets[exp.q] + "_RLSR_time", H, lplsr.exe_ilp);
-          exp.write(exp.datasets[exp.q] + "_RLSR_ilp", H, lplsr.ilp_score);
-          exp.write(exp.datasets[exp.q] + "_RLSR_lp", H, ground);
-          exp.write(exp.datasets[exp.q] + "_RLSR_igap", H, intGap(lplsr.ilp_score, ground));
+          exp.write(label + "_RLSR_found", H, 1);
+          exp.write(label + "_RLSR_time", H, lplsr.exe_ilp);
+          exp.write(label + "_RLSR_ilp", H, lplsr.ilp_score);
+          exp.write(label + "_RLSR_lp", H, ground);
+          exp.write(label + "_RLSR_igap", H, intGap(lplsr.ilp_score, ground));
         } else{
-          exp.write(exp.datasets[exp.q] + "_RLSR_nofound", H, 1);
+          exp.write(label + "_RLSR_nofound", H, 1);
         }
       }
     }
@@ -237,8 +239,9 @@ void M4(){
   DetExp exp = DetExp(exp_name);
   exp.o = 6;
   int R = 5;
-  for (int q = 0; q < 2; q ++){
+  for (int q = 0; q <= 3; q ++){
     exp.q = q;
+    string label = fmt::format("{}{}", exp.datasets[exp.q], q/2);
     for (int i = 1; i <= R; i ++){
       exp.seed = i;
       DetSql det_sql = exp.generate();
@@ -250,23 +253,23 @@ void M4(){
         DualReducer tdr = DualReducer(exp.C, det_prob, true);
         double ground = tdr.lp_score;
         if (tdr.status == Found){
-          exp.write(exp.datasets[exp.q] + "_DR_found", exp.H, 1);
-          exp.write(exp.datasets[exp.q] + "_DR_time", H, tdr.exe_ilp);
-          exp.write(exp.datasets[exp.q] + "_DR_ilp", H, tdr.ilp_score);
-          exp.write(exp.datasets[exp.q] + "_DR_lp", H, ground);
-          exp.write(exp.datasets[exp.q] + "_DR_igap", H, intGap(tdr.ilp_score, ground));
+          exp.write(label + "_DR_found", exp.H, 1);
+          exp.write(label + "_DR_time", H, tdr.exe_ilp);
+          exp.write(label + "_DR_ilp", H, tdr.ilp_score);
+          exp.write(label + "_DR_lp", H, ground);
+          exp.write(label + "_DR_igap", H, intGap(tdr.ilp_score, ground));
         } else{
-          exp.write(exp.datasets[exp.q] + "_DR_nofound", exp.H, 1);
+          exp.write(label + "_DR_nofound", exp.H, 1);
         }
         RandomDualReducer rdr = RandomDualReducer(exp.C, det_prob, true, tdr.failure_count);
         if (rdr.status == Found){
-          exp.write(exp.datasets[exp.q] + "_RDR_found", exp.H, 1);
-          exp.write(exp.datasets[exp.q] + "_RDR_time", H, rdr.exe_ilp);
-          exp.write(exp.datasets[exp.q] + "_RDR_ilp", H, rdr.ilp_score);
-          exp.write(exp.datasets[exp.q] + "_RDR_lp", H, ground);
-          exp.write(exp.datasets[exp.q] + "_RDR_igap", H, intGap(rdr.ilp_score, ground));
+          exp.write(label + "_RDR_found", exp.H, 1);
+          exp.write(label + "_RDR_time", H, rdr.exe_ilp);
+          exp.write(label + "_RDR_ilp", H, rdr.ilp_score);
+          exp.write(label + "_RDR_lp", H, ground);
+          exp.write(label + "_RDR_igap", H, intGap(rdr.ilp_score, ground));
         } else{
-          exp.write(exp.datasets[exp.q] + "_RDR_nofound", exp.H, 1);
+          exp.write(label + "_RDR_nofound", exp.H, 1);
         }
       }
     }
@@ -299,9 +302,10 @@ void M6(){
   DetExp exp = DetExp(exp_name);
   exp.o = 8;
   int R = 5;
-  for (int q = 0; q < 2; q ++){
+  for (int q = 0; q <= 3; q ++){
     exp.q = q;
     exp.E = exp.Es[exp.q];
+    string label = fmt::format("{}{}", exp.datasets[exp.q], q/2);
     for (int i = 1; i <= R; i ++){
       exp.seed = i;
       DetSql det_sql = exp.generate();
@@ -315,22 +319,22 @@ void M6(){
         // RandomLayeredSketchRefine lplsr = RandomLayeredSketchRefine(exp.C, lsr_prob, exp.S, true);
         GDRLayeredSketchRefine gdrlsr = GDRLayeredSketchRefine(exp.C, lsr_prob, exp.S, true);
         if (lsr.status == Found){
-          exp.write(exp.datasets[exp.q] + "_LSR_found", H, 1);
-          exp.write(exp.datasets[exp.q] + "_LSR_time", H, lsr.exe_ilp);
-          exp.write(exp.datasets[exp.q] + "_LSR_ilp", H, lsr.ilp_score);
-          exp.write(exp.datasets[exp.q] + "_LSR_lp", H, ground);
-          exp.write(exp.datasets[exp.q] + "_LSR_igap", H, intGap(lsr.ilp_score, ground));
+          exp.write(label + "_LSR_found", H, 1);
+          exp.write(label + "_LSR_time", H, lsr.exe_ilp);
+          exp.write(label + "_LSR_ilp", H, lsr.ilp_score);
+          exp.write(label + "_LSR_lp", H, ground);
+          exp.write(label + "_LSR_igap", H, intGap(lsr.ilp_score, ground));
         } else{
-          exp.write(exp.datasets[exp.q] + "_LSR_nofound", H, 1);
+          exp.write(label + "_LSR_nofound", H, 1);
         }
         if (gdrlsr.status == Found){
-          exp.write(exp.datasets[exp.q] + "_GDRLSR_found", H, 1);
-          exp.write(exp.datasets[exp.q] + "_GDRLSR_time", H, gdrlsr.exe_ilp);
-          exp.write(exp.datasets[exp.q] + "_GDRLSR_ilp", H, gdrlsr.ilp_score);
-          exp.write(exp.datasets[exp.q] + "_GDRLSR_lp", H, ground);
-          exp.write(exp.datasets[exp.q] + "_GDRLSR_igap", H, intGap(gdrlsr.ilp_score, ground));
+          exp.write(label + "_GDRLSR_found", H, 1);
+          exp.write(label + "_GDRLSR_time", H, gdrlsr.exe_ilp);
+          exp.write(label + "_GDRLSR_ilp", H, gdrlsr.ilp_score);
+          exp.write(label + "_GDRLSR_lp", H, ground);
+          exp.write(label + "_GDRLSR_igap", H, intGap(gdrlsr.ilp_score, ground));
         } else{
-          exp.write(exp.datasets[exp.q] + "_GDRLSR_nofound", H, 1);
+          exp.write(label + "_GDRLSR_nofound", H, 1);
         }
       }
     }
@@ -369,7 +373,7 @@ void M8(){
   DetExp exp = DetExp(exp_name);
   exp.o = 7;
   int R = 5;
-  for (int q = 0; q < 2; q ++){
+  for (int q = 0; q <= 3; q ++){
     exp.q = q;
     exp.E = exp.Es[exp.q];
     for (int i = 1; i <= R; i ++){
@@ -379,7 +383,7 @@ void M8(){
       DetProb det_prob = DetProb(det_sql, -1, exp.seed);
       for (auto H : exp.H7){
         exp.H = H;
-        string label = fmt::format("{}_H{}", exp.datasets[exp.q], exp.H);
+        string label = fmt::format("{}{}", exp.datasets[exp.q], q/2);
         LsrProb lsr_prob = LsrProb(det_sql, exp.getDlvPartitionName(), exp.seed);
         lsr_prob.generateBounds(exp.E, exp.a, exp.H);
         det_prob.copyBounds(lsr_prob.bl, lsr_prob.bu, lsr_prob.cl, lsr_prob.cu);
@@ -391,23 +395,23 @@ void M8(){
         double ground = 0;
         if (lsr.status == Found){
           ground = lsr.lp_score;
-          exp.write(exp.datasets[exp.q] + "_LSR_found", H, 1);
-          exp.write(exp.datasets[exp.q] + "_LSR_time", H, lsr.exe_ilp);
-          exp.write(exp.datasets[exp.q] + "_LSR_ilp", H, lsr.ilp_score);
-          exp.write(exp.datasets[exp.q] + "_LSR_lp", H, ground);
-          exp.write(exp.datasets[exp.q] + "_LSR_igap", H, intGap(lsr.ilp_score, ground));
+          exp.write(label + "_LSR_found", H, 1);
+          exp.write(label + "_LSR_time", H, lsr.exe_ilp);
+          exp.write(label + "_LSR_ilp", H, lsr.ilp_score);
+          exp.write(label + "_LSR_lp", H, ground);
+          exp.write(label + "_LSR_igap", H, intGap(lsr.ilp_score, ground));
         } else{
-          exp.write(exp.datasets[exp.q] + "_LSR_nofound", H, 1);
+          exp.write(label + "_LSR_nofound", H, 1);
         }
 
         if (poplsr.status == Found){
-          exp.write(exp.datasets[exp.q] + "_POPLSR_found", H, 1);
-          exp.write(exp.datasets[exp.q] + "_POPLSR_time", H, poplsr.exe_ilp);
-          exp.write(exp.datasets[exp.q] + "_POPLSR_ilp", H, poplsr.ilp_score);
-          exp.write(exp.datasets[exp.q] + "_POPLSR_lp", H, ground);
-          exp.write(exp.datasets[exp.q] + "_POPLSR_igap", H, intGap(poplsr.ilp_score, ground));
+          exp.write(label + "_POPLSR_found", H, 1);
+          exp.write(label + "_POPLSR_time", H, poplsr.exe_ilp);
+          exp.write(label + "_POPLSR_ilp", H, poplsr.ilp_score);
+          exp.write(label + "_POPLSR_lp", H, ground);
+          exp.write(label + "_POPLSR_igap", H, intGap(poplsr.ilp_score, ground));
         } else{
-          exp.write(exp.datasets[exp.q] + "_POPLSR_nofound", H, 1);
+          exp.write(label + "_POPLSR_nofound", H, 1);
         }
       }
     }
@@ -419,7 +423,7 @@ void M8(){
 void E1(){
   string exp_name = "E1";
   DetExp exp = DetExp(exp_name);
-  int R = 5;
+  int R = 10;
   for (int q = 3; q >= 0; q --){
     // if (q == 3) continue;
     exp.q = q;
@@ -450,7 +454,11 @@ void E1(){
           }
 
           lsr_prob.partition_name = exp.getDlvPartitionName();
-          LayeredSketchRefine lsr = LayeredSketchRefine(exp.C, lsr_prob, exp.S, true); // Progressive shading with 4 cores
+          LayeredSketchRefine lsr = LayeredSketchRefine(exp.C, lsr_prob, exp.S, true);
+          cout << "lsr!!\n";
+          lsr_prob.partition_name = exp.getDlvPartitionName();
+          LayeredSketchRefine lsr4 = LayeredSketchRefine(4, lsr_prob, exp.S, true);
+          cout << "lsr4!!\n";
           double ground = -DBL_MAX;
           if (o <= 6){
             Dual dual = Dual(exp.C, det_prob);
@@ -474,6 +482,18 @@ void E1(){
             exp.write(label + "_LSR_nofound", N, 1);
           }
 
+          if (lsr4.status == Found){
+            assert(ch.checkLpFeasibility(lsr4.lp_sol) == Feasibility);
+            assert(ch.checkIlpFeasibility(lsr4.ilp_sol) == Feasibility);
+            exp.write(label + "_LSR4_found", N, 1);
+            exp.write(label + "_LSR4_time", N, lsr4.exe_ilp);
+            exp.write(label + "_LSR4_ilp", N, lsr4.ilp_score);
+            exp.write(label + "_LSR4_ground", N, ground);
+            exp.write(label + "_LSR4_igap", N, intGap(lsr4.ilp_score, ground));
+          } else {
+            exp.write(label + "_LSR4_nofound", N, 1);
+          }
+
           if (o <= 6){
             GurobiSolver gs = GurobiSolver(det_prob);
             gs.solveIlp(1e-4, kTimeLimit);
@@ -487,10 +507,11 @@ void E1(){
               exp.write(label + "_GDR_nofound", N, 1);
             }
           }
+          cout << "gs!!\n";
 
           if (o <= 8){
             lsr_prob.partition_name = exp.getKdPartitionName();
-            SketchRefine sr = SketchRefine(lsr_prob, exp.C);
+            TmpSketchRefine sr = TmpSketchRefine(lsr_prob, 80);
             map<long long, long long> sr_sol;
             bool is_success = sr.sketchAndRefine(sr_sol);
             if (is_success && ch.checkIlpFeasibility(sr_sol)==Feasibility){
@@ -504,6 +525,11 @@ void E1(){
               exp.write(label + "_SR_nofound", N, 1);
             }
           }
+          cout << "sr!!\n";
+        }
+        if (o == 9){
+          exp.dropDlvPartition();
+          exp.dropGeneratedTable();
         }
       }
     }
@@ -602,10 +628,10 @@ void T1(){
       for (auto H : exp.H7){ 
         exp.H = H;
         lsr_prob.generateBounds(exp.E, exp.a, exp.H);
-        SketchRefine sr = SketchRefine(lsr_prob, 80);
+        SketchRefine sr = SketchRefine(lsr_prob, 1);
         map<long long, long long> sr_sol;
         bool is_success = sr.sketchAndRefine(sr_sol);    
-        SketchRefine tmp_sr = SketchRefine(lsr_prob, 4);
+        TmpSketchRefine tmp_sr = TmpSketchRefine(lsr_prob, 80);
         map<long long, long long> tmp_sr_sol;
         bool tmp_is_success = tmp_sr.sketchAndRefine(tmp_sr_sol); 
         LsrChecker ch = LsrChecker(lsr_prob);
@@ -643,17 +669,18 @@ void T1(){
 
 int main() {
   // test();
-  // G1();
-  // G2();
-  // M1();
-  // M2();
-  // M3();
-  // M4();
-  // M5();
-  // M6();
-  // M7();
+  G1();
+  G2();
+  M1();
+  M2();
+  M3();
+  M4();
+  M5();
+  M6();
+  M7();
   M8();
-  // E1();
-  // E2();
+  E1();
+  E2();
+  // T1();
   return 0;
 }

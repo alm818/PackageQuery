@@ -7,7 +7,7 @@
 using namespace pb;
 
 static const double kMipGap = 1e-4;
-static const int kIlpSize = 5000;
+static const int kIlpSize = 500;
 
 // All the time is in ms
 class DualReducer{

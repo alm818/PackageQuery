@@ -28,12 +28,16 @@ vector<string> DetExp::datasets = {
   "tpch", 
   "ssds",
   "tpch",
+  "ssds",
+  "tpch",
   "ssds"
 };
 
 vector<string> DetExp::obj_cols = {
   "price",
   "tmass_prox",
+  "tax",
+  "k",
   "tax",
   "k"
 };
@@ -42,6 +46,8 @@ vector<bool> DetExp::is_maximizes = {
   true, 
   false,
   false,
+  true,
+  false,
   true
 };
 
@@ -49,6 +55,8 @@ vector<vector<string>> DetExp::arr_att_cols = {
   {"quantity", "discount", "tax"},
   {"j", "h", "k"},
   {"quantity", "price"},
+  {"j", "h", "tmass_prox"},
+  {"quantity", "discount", "price"},
   {"j", "h"}
 };
 
@@ -56,10 +64,14 @@ vector<vector<int>> DetExp::arr_att_senses = {
   {LowerBounded, UpperBounded, Bounded},
   {LowerBounded, UpperBounded, Bounded},
   {UpperBounded, Bounded},
+  {UpperBounded, Bounded, LowerBounded},
+  {UpperBounded, Bounded, LowerBounded},
   {Bounded, LowerBounded}
 };
 
 vector<bool> DetExp::has_count_constraints = {
+  true,
+  true,
   true,
   true,
   true,
@@ -70,6 +82,8 @@ vector<long long> DetExp::us = {
   1,
   1,
   1,
+  1,
+  1,
   1
 };
 
@@ -77,11 +91,13 @@ vector<string> DetExp::filtered_cols = {
   "price",
   "tmass_prox",
   "tax",
+  "tmass_prox",
+  "price",
   "k"
 };
 
 vector<double> DetExp::Es = {
-  30.0, 30.0, 100, 100
+  30.0, 30.0, 100.0, 50.0, 50.0, 100.0
 };
 
 DetExp::~DetExp(){
@@ -150,6 +166,13 @@ DetSql DetExp::generate(bool is_lazy){
   return det_sql;
 }
 
+void DetExp::dropGeneratedTable(){
+  string table_name = getTableName();
+  if (pg->existTable(table_name)){
+    pg->dropTable(table_name);
+  }
+}
+
 double DetExp::dlvPartition(bool is_lazy){
   DynamicLowVariance dlv = DynamicLowVariance(C, g, M, tps, is_max_var);
   string table_name = getTableName();
@@ -182,6 +205,24 @@ double DetExp::kdPartition(bool is_lazy){
     kt.partitionTable(getTableName(), getKdPartitionName(), getCols(), tau, DBL_MAX);
   }
   return kt.exec_kd;
+}
+
+void DetExp::dropDlvPartition(){
+  DynamicLowVariance dlv = DynamicLowVariance(C, g, M, tps, is_max_var);
+  string table_name = getTableName();
+  if (dlv.existPartition(table_name, getDlvPartitionName())){
+    dlv.dropPartition(table_name, getDlvPartitionName());
+  }
+}
+
+void DetExp::dropKdPartition(){
+  KDTree kt;
+  string ptable = fmt::format("[1P]_{}_{}", getTableName(), getKdPartitionName());
+  string gtable = fmt::format("[1G]_{}_{}", getTableName(), getKdPartitionName());
+  if (pg->existTable(ptable) && pg->existTable(gtable)){
+    pg->dropTable(ptable);
+    pg->dropTable(gtable);
+  }
 }
 
 string DetExp::getDlvPartitionName(){
