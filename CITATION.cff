@@ -16,6 +16,6 @@ authors:
 title: "Scaling Package Queries to a Billion Tuples via Hierarchical
 Partitioning and Customized Optimization"
 version: 1.0.0
-doi: arXiv.2307.02860
+doi: 10.48550/arXiv.2307.02860
 date-released: 2023-07-11
 url: "https://github.com/alm818/PackageQuery"
