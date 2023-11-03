@@ -56,15 +56,10 @@ INCLUDE_DIRECTORIES( ${PYTHON_INCLUDE_DIRS} )
 link_directories( ${PYTHON_LIBRARIES})
 
 # MAIN
-# set(MAIN_NAME "main_config")
-# set(MAIN_NAME "main_dlv")
-# set(MAIN_NAME "main_sketchrefine")
+set(MAIN_NAME "main")
 
 # TEST
-set(MAIN_NAME "test_reproduce")
-# set(MAIN_NAME "test_final")
-# set(MAIN_NAME "test_det_bound")
-# set(MAIN_NAME "test_dlv")
+# set(MAIN_NAME "test_reproduce")
 
 message("PROJECT NAME: " ${PROJECT_NAME})
 message("SOURCE FOLDER: " ${CMAKE_SOURCE_DIR})
