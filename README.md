@@ -6,6 +6,10 @@ A package query returns a package — a multiset of tuples — that maximizes or
 
 ## Installation and Setup
 
+### OS Requirements
+
+Ubuntu 20.04.4 LTS
+
 ### Install Python packages
 
 This code needs Python 3.8 or higher.
@@ -15,9 +19,9 @@ pip3 install -r requirements.txt
 
 ### Setup Postgres server and hardware information
 
-This code needs Postgres v14.7 or higher. Configure the file *config.txt* with the appropriate information 
+This code needs Postgres v14.7 or higher. Configure the file *config.txt* with the appropriate information
  
-Parameters for Postgres: hostname, port, username, database, password, schema
+Parameters for Postgres: hostname, port, username, database, password, schema (to find these information run psql and then \conninfo)
   
 Parameters for Hardware information:
   
@@ -58,7 +62,7 @@ source .bashrc
 ```bash
 pip3 install conan
 cd PackageQuery/build
-conan install .
+conan install . --build=missing
 ```
 
 #### Install Gurobi
@@ -84,7 +88,7 @@ This code needs Gurobiv9.5.2 or higher.
 
 ## Result Reproduction
 
-Build files
+Build files (only need to do once)
 
 ```bash
   cd build
@@ -99,7 +103,17 @@ Compile files and run
   bin/main
 ```
 
-This will generate 3 files in *plots* folder: A3.csv, A4_tpch.csv and A4_ssds.csv
+This will create the following files: G1.txt, G2.txt, M1.txt, M2.txt, M3.txt, M4.txt, M5.txt, M6.txt, M8.txt, E1.txt, E2.txt where:
+- G1.txt is the result for **Mini-Experiment 6.** *What is the optimal configuration of augmenting size α and downscale factor d<sub>f</sub>?* 
+- G2.txt is the result for **Mini-Experiment 7.** *What is the optimal sub-ILP size q for Dual Reducer?*
+- M1.txt is the result for **Mini-Experiment 1.** *Does replacing the LP solution with an ILP solution in SHADING improve overall optimality?*
+- M2.txt is the result for **Mini-Experiment 2.** *Does replacing Neighbor Sampling with a random sampling of representative tuples impact the overall performance of Progressive Shading?*
+- M3.txt is the result for **Mini-Experiment 3.** *How well does Parallel Dual Simplex scale with more cores?*
+- M4.txt is the result for **Mini-Experiment 4.** *Does replacing the Auxiliary LP with a random sampling of tuples from S to formulate a sub-ILP of size q impact the overall performance of Dual Reducer?*
+- M5.txt is the result for **Mini-Experiment 5.** *How efficient is DLV compared to KD-Tree when producing a large number of groups?*
+- M6.txt is the result for **Mini-Experiment 8.** *Is it worth using Dual Reducer for the last layer of Progressive Shading instead of Gurobi?*
+- M8.txt is the result for *What happens when we use Random Partitioning for Progressive Shading*
+- E1.txt is the result for **Query performance as relation size increases**
+- E2.txt is the result for **False infeasibility as hardness increases**
 
-You can draw the related graph in the paper by running Experiment.ipynb in the *plots* folder
-
+You can draw the related graph in the paper by running Plot.ipynb in the *plots* folder

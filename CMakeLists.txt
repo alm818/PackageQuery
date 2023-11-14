@@ -56,10 +56,10 @@ INCLUDE_DIRECTORIES( ${PYTHON_INCLUDE_DIRS} )
 link_directories( ${PYTHON_LIBRARIES})
 
 # MAIN
-set(MAIN_NAME "main")
+# set(MAIN_NAME "main")
 
 # TEST
-# set(MAIN_NAME "test_reproduce")
+set(MAIN_NAME "test_reproduce")
 
 message("PROJECT NAME: " ${PROJECT_NAME})
 message("SOURCE FOLDER: " ${CMAKE_SOURCE_DIR})
