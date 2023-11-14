@@ -72,12 +72,12 @@ This code needs Gurobiv9.5.2 or higher.
 1. Request an academic license from [Gurobi](https://www.gurobi.com/academia/academic-program-and-licenses/).
 2. Follow the instructions to download and unzip Gurobi as well as set up the license.
 3. Edit the file *cmake/FindGUROBI.cmake*:
-   * Change the line
+   * Change the below line
    ```bash
    set(GUROBI_HOME "/home/alm818/downloads/gurobi950/linux64")
    ```
      to the Gurobi's home in your system
-   * Change the line
+   * Change the below line
    ```bash
    find_library(GUROBI_LIBRARY
     NAMES gurobi gurobi95
@@ -112,7 +112,7 @@ This will create the following files: G1.txt, G2.txt, M1.txt, M2.txt, M3.txt, M4
 - M4.txt is the result for **Mini-Experiment 4.** *Does replacing the Auxiliary LP with a random sampling of tuples from S to formulate a sub-ILP of size q impact the overall performance of Dual Reducer?*
 - M5.txt is the result for **Mini-Experiment 5.** *How efficient is DLV compared to KD-Tree when producing a large number of groups?*
 - M6.txt is the result for **Mini-Experiment 8.** *Is it worth using Dual Reducer for the last layer of Progressive Shading instead of Gurobi?*
-- M8.txt is the result for *What happens when we use Random Partitioning for Progressive Shading*
+- M8.txt is the result for *What happens when we use Random Partitioning for Progressive Shading?*
 - E1.txt is the result for **Query performance as relation size increases**
 - E2.txt is the result for **False infeasibility as hardness increases**
 
