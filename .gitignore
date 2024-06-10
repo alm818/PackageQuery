@@ -12,3 +12,4 @@ cmake/*
 .ipynb_checkpoints/
 config.txt
 package_query.code-workspace
+CMakeUserPresets.json

@@ -7,157 +7,81 @@ endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_COMPILE_FEATURES cxx_std_17)
 
-project(PackageQuery VERSION 1.0.0)
+project(StochasticPackageQuery VERSION 1.0.0)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_definitions(-DDEBUG)
+endif()
+
+set(EXECUTABLE_NAME main)
+set(SRC src)
+set(TEST test)
 
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Release")
+    set(CMAKE_BUILD_TYPE Release)
 endif()
-set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
-set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR})
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
-set(EXECUTABLE_NAME "main")
 
-# Matplotlib
-# include(GNUInstallDirs)
-# set(PACKAGE_NAME matplotlib_cpp)
-# set(INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/${PACKAGE_NAME}/cmake)
-
-# add_library(matplotlib_cpp INTERFACE)
-# find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
-# target_link_libraries(matplotlib_cpp INTERFACE
-#   Python3::Python
-#   Python3::Module
-# )
-# find_package(Python3 COMPONENTS NumPy)
-# if(Python3_NumPy_FOUND)
-#   target_link_libraries(matplotlib_cpp INTERFACE
-#     Python3::NumPy
-#   )
-# else()
-#   target_compile_definitions(matplotlib_cpp INTERFACE WITHOUT_NUMPY)
-# endif()
-# install(
-#   TARGETS matplotlib_cpp
-#   EXPORT install_targets
-# )
-
-# For window
-# set(PYTHONPACKAGE "C:/Users/xuana/AppData/Local/Packages/PythonSoftwareFoundation.Python.3.9_qbz5n2kfra8p0/LocalCache/local-packages/Python39/site-packages")
-# set(PYTHONHOME "C:/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.9_3.9.2032.0_x64__qbz5n2kfra8p0")
-# include_directories(${PYTHONHOME}/include)
-# include_directories(${PYTHONPACKAGE}/numpy/core/include)
-# link_directories(${PYTHONHOME}/libs)
-# add_definitions(-DMATPLOTLIBCPP_PYTHON_HEADER=Python.h)
-
-find_package(PythonLibs REQUIRED)
-INCLUDE_DIRECTORIES( ${PYTHON_INCLUDE_DIRS} )
-link_directories( ${PYTHON_LIBRARIES})
-
-# MAIN
-# set(MAIN_NAME "main")
-
-# TEST
-set(MAIN_NAME "test_reproduce")
-
-message("PROJECT NAME: " ${PROJECT_NAME})
-message("SOURCE FOLDER: " ${CMAKE_SOURCE_DIR})
-message("BUILD FOLDER: " ${CMAKE_BINARY_DIR})
-message("CMAKE MODULE FOLDER: " ${CMAKE_MODULE_PATH})
-message("EXECUTABLE NAME: " ${MAIN_NAME})
-
-include_directories("${PROJECT_SOURCE_DIR}")
-include_directories(
-  ${PROJECT_SOURCE_DIR}/include
-)
-
-file(GLOB all_SRCS
-  "${CMAKE_SOURCE_DIR}/runnable/${MAIN_NAME}.cpp"
-  "${PROJECT_SOURCE_DIR}/include/pb/util/*.h"
-  "${PROJECT_SOURCE_DIR}/include/pb/util/*.cpp"
-  "${PROJECT_SOURCE_DIR}/include/pb/core/*.h"
-  "${PROJECT_SOURCE_DIR}/include/pb/core/*.cpp"
-  "${PROJECT_SOURCE_DIR}/include/pb/det/*.h"
-  "${PROJECT_SOURCE_DIR}/include/pb/det/*.cpp"
-  "${PROJECT_SOURCE_DIR}/include/pb/sto/*.h"
-  "${PROJECT_SOURCE_DIR}/include/pb/sto/*.cpp"
-  "${PROJECT_SOURCE_DIR}/include/pb/lib/*.h"
-  "${PROJECT_SOURCE_DIR}/include/pb/lib/*.hpp"
-  "${PROJECT_SOURCE_DIR}/include/pb/lib/*.cpp"
-  "${PROJECT_SOURCE_DIR}/include/pb/tmp/*.hpp"
-  "${PROJECT_SOURCE_DIR}/include/pb/tmp/*.cpp"
-)
-
-#OpenMP for Windows
-# find_package(OpenMP)
-# if (OPENMP_FOUND)
-#     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-#     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-#     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-# endif()
-
-if(CMAKE_COMPILER_IS_GNUCXX)
-  set(CMAKE_CXX_FLAGS "-Wall -Wextra")
-  set(CMAKE_CXX_FLAGS_DEBUG "-g")
-endif(CMAKE_COMPILER_IS_GNUCXX)
-set(CMAKE_CXX_FLAGS_RELEASE "-O2")
-
-# Conan
-include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-conan_basic_setup()
-
-# Gurobi
-find_package(GUROBI REQUIRED)
+# Find Gurobi
+find_path(GUROBI_INCLUDE_DIR NAMES gurobi_c++.h PATHS "$ENV{GUROBI_HOME}/include" NO_DEFAULT_PATH)
+find_library(GUROBI_LIBRARY NAMES gurobi110 PATHS "$ENV{GUROBI_HOME}/lib" NO_DEFAULT_PATH)
+find_library(GUROBI_CXX_LIBRARY NAMES gurobi_c++ PATHS "$ENV{GUROBI_HOME}/lib" NO_DEFAULT_PATH)
 include_directories(${GUROBI_INCLUDE_DIR})
 
-# Cplex
-find_package(Cplex)
-include_directories(${CPLEX_INCLUDE_DIRS})
+find_package(Threads REQUIRED)
+find_package(fmt REQUIRED)
+find_package(PostgreSQL REQUIRED)
+find_package(Boost REQUIRED)
+find_package(Eigen3 REQUIRED)
+find_package(CCfits REQUIRED)
 
-add_executable(${EXECUTABLE_NAME} ${all_SRCS})
+if(APPLE)
+    set(CMAKE_C_COMPILER clang)
+    set(CMAKE_CXX_COMPILER clang++)
 
-# OpenMP for Ubuntu
-find_package(OpenMP)
-if(OpenMP_CXX_FOUND)
-    target_link_libraries(${EXECUTABLE_NAME} PRIVATE OpenMP::OpenMP_CXX)
+    if(CMAKE_C_COMPILER_ID MATCHES "Clang\$")
+        set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp")
+        set(OpenMP_C_LIB_NAMES "omp")
+        set(OpenMP_omp_LIBRARY omp)
+    endif()
+
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang\$")
+        set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp")
+        set(OpenMP_CXX_LIB_NAMES "omp")
+        set(OpenMP_omp_LIBRARY omp)
+    endif()
+else()
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
+find_package(OpenMP REQUIRED)
 
-if(CXX)
-    target_link_libraries(${EXECUTABLE_NAME} PRIVATE optimized ${GUROBI_CXX_LIBRARY} debug ${GUROBI_CXX_DEBUG_LIBRARY})
-endif()
+include_directories(
+  ${PROJECT_SOURCE_DIR}/${SRC}
+)
 
-target_link_libraries(${EXECUTABLE_NAME} PRIVATE ${CONAN_LIBS} ${GUROBI_LIBRARY} ${CMAKE_DL_LIBS})
-target_link_libraries(${EXECUTABLE_NAME} PRIVATE ${CPLEX_LIBRARIES})
+set(MAIN_NAME main)
+#set(MAIN_NAME test_reproduce)
 
-# target_link_libraries(${EXECUTABLE_NAME} PRIVATE matplotlib_cpp)
-# set_target_properties(${EXECUTABLE_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/resource/matplotlib")
+file(GLOB ALL_SRCS
+  "${PROJECT_SOURCE_DIR}/${TEST}/${MAIN_NAME}.cpp"
+  "${PROJECT_SOURCE_DIR}/${SRC}/util/*.hpp"
+  "${PROJECT_SOURCE_DIR}/${SRC}/util/*.cpp"
+  "${PROJECT_SOURCE_DIR}/${SRC}/det/*.hpp"
+  "${PROJECT_SOURCE_DIR}/${SRC}/det/*.cpp"
+  "${PROJECT_SOURCE_DIR}/${SRC}/core/*.hpp"
+  "${PROJECT_SOURCE_DIR}/${SRC}/core/*.cpp"
+  "${PROJECT_SOURCE_DIR}/${SRC}/lib/*.hpp"
+  "${PROJECT_SOURCE_DIR}/${SRC}/lib/*.cpp"
+  "${PROJECT_SOURCE_DIR}/${SRC}/tmp/*.hpp"
+  "${PROJECT_SOURCE_DIR}/${SRC}/tmp/*.cpp"
+)
 
-# Matplotlib
-# install(FILES
-#   "${PROJECT_SOURCE_DIR}/include/matplotlibcpp.h"
-#   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-
-# install(EXPORT install_targets
-#   FILE
-#     ${PACKAGE_NAME}Targets.cmake
-#   NAMESPACE
-#     ${PACKAGE_NAME}::
-#   DESTINATION
-#     ${INSTALL_CONFIGDIR}
-# )
-
-message("CMAKE CURRENT SOURCE DIR: " ${CMAKE_CURRENT_SOURCE_DIR})
-message("CMAKE CURRENT BINARY DIR: " ${CMAKE_CURRENT_BINARY_DIR})
-message("INSTALL CONFIGDIR: " ${INSTALL_CONFIGDIR})
-
-# include(CMakePackageConfigHelpers)
-# configure_package_config_file(
-#   ${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PACKAGE_NAME}Config.cmake.in
-#   ${CMAKE_CURRENT_BINARY_DIR}/${PACKAGE_NAME}Config.cmake
-#   INSTALL_DESTINATION ${INSTALL_CONFIGDIR}
-# )
-# install(FILES
-#   ${CMAKE_CURRENT_BINARY_DIR}/${PACKAGE_NAME}Config.cmake
-#   DESTINATION ${INSTALL_CONFIGDIR}
-# )
+add_executable(${EXECUTABLE_NAME} ${ALL_SRCS})
+target_link_libraries(${EXECUTABLE_NAME} OpenMP::OpenMP_CXX)
+target_link_libraries(${EXECUTABLE_NAME} fmt::fmt)
+target_link_libraries(${EXECUTABLE_NAME} Eigen3::Eigen)
+target_link_libraries(${EXECUTABLE_NAME} PostgreSQL::PostgreSQL)
+target_link_libraries(${EXECUTABLE_NAME} boost::boost)
+target_link_libraries(${EXECUTABLE_NAME} ${GUROBI_LIBRARY} ${GUROBI_CXX_LIBRARY})

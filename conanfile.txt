@@ -3,7 +3,11 @@ fmt/8.0.1
 eigen/3.4.0
 boost/1.77.0
 ccfits/2.6
-libpq/13.4
+libpq/15.5
 
 [generators]
-cmake
+CMakeDeps
+CMakeToolchain
+
+[layout]
+cmake_layout
